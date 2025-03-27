@@ -1,28 +1,44 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState(""); // For error messages
+  const navigate = useNavigate(); // Hook to redirect after login
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login Data Submitted:", formData);
+    setError(""); // Reset error message
+
+    try {
+      const response = await fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      localStorage.setItem("token", data.token); // Store token in localStorage
+      navigate("/Home"); // Redirect to home page
+    } catch (error) {
+      setError(error.message);
+    }
   };
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-lg">
       <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">Welcome Back</h2>
+      {error && <p className="text-red-500 text-center">{error}</p>} {/* Show error if login fails */}
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block font-semibold text-gray-700 mb-1">Email Address</label>
@@ -54,9 +70,6 @@ const Login = () => {
         >
           Log In
         </button>
-        <p className="text-center text-gray-600 mt-4">
-          Don't have an account? <Link to="/" className="text-blue-500 hover:underline">Sign Up</Link>
-        </p>
       </form>
     </div>
   );
